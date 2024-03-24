@@ -2,15 +2,15 @@
 #include <cctype>
 #include <string_view>
 #include <tuple>
-#include <utility>
 
 #include "doctest/doctest.h"
 
 using namespace std::literals;
 
-using Result = std::tuple<std::string_view, double>;
+using Result = std::tuple<std::string_view, double, bool>;
 
 static auto parse_digits(std::string_view str) -> Result {
+  auto start_len = str.size();
   auto sign = 1., dst = 0., base = 10.;
   for (auto stage = 0; stage < 6 and not str.empty(); str.remove_prefix(1)) {
     if (stage == 0 and (str[0] == '-' or str[0] == '+')) {
@@ -22,64 +22,65 @@ static auto parse_digits(std::string_view str) -> Result {
       break;
     }
   }
-  return {str, sign * dst};
+  return {str, sign * dst, start_len != str.length()};
 }
 
 TEST_CASE("parse_digits") {
-  CHECK_EQ(parse_digits("1"sv), std::tuple{""sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("1+1"sv), std::tuple{"+1"sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("1-1"sv), std::tuple{"-1"sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("1--1"sv), std::tuple{"--1"sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("-1"sv), std::tuple{""sv, doctest::Approx(-1.)});
-  CHECK_EQ(parse_digits("--1"sv), std::tuple{""sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("---1"sv), std::tuple{""sv, doctest::Approx(-1.)});
-  CHECK_EQ(parse_digits("-+-1"sv), std::tuple{""sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("-+-1+1"sv), std::tuple{"+1"sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("-+-1-1"sv), std::tuple{"-1"sv, doctest::Approx(1.)});
+  using doctest::Approx;
+  CHECK_EQ(parse_digits("1"sv), std::tuple{""sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("1+1"sv), std::tuple{"+1"sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("1-1"sv), std::tuple{"-1"sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("1--1"sv), std::tuple{"--1"sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("-1"sv), std::tuple{""sv, Approx(-1.), true});
+  CHECK_EQ(parse_digits("--1"sv), std::tuple{""sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("---1"sv), std::tuple{""sv, Approx(-1.), true});
+  CHECK_EQ(parse_digits("-+-1"sv), std::tuple{""sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("-+-1+1"sv), std::tuple{"+1"sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("-+-1-1"sv), std::tuple{"-1"sv, Approx(1.), true});
 
-  CHECK_EQ(parse_digits("1."sv), std::tuple{""sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("-1."sv), std::tuple{""sv, doctest::Approx(-1.)});
-  CHECK_EQ(parse_digits("+1."sv), std::tuple{""sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("+-1."sv), std::tuple{""sv, doctest::Approx(-1.)});
-  CHECK_EQ(parse_digits("+--1."sv), std::tuple{""sv, doctest::Approx(1.)});
-  CHECK_EQ(parse_digits("-1.+1"sv), std::tuple{"+1"sv, doctest::Approx(-1.)});
-  CHECK_EQ(parse_digits("-1.-1"sv), std::tuple{"-1"sv, doctest::Approx(-1.)});
+  CHECK_EQ(parse_digits("1."sv), std::tuple{""sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("-1."sv), std::tuple{""sv, Approx(-1.), true});
+  CHECK_EQ(parse_digits("+1."sv), std::tuple{""sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("+-1."sv), std::tuple{""sv, Approx(-1.), true});
+  CHECK_EQ(parse_digits("+--1."sv), std::tuple{""sv, Approx(1.), true});
+  CHECK_EQ(parse_digits("-1.+1"sv), std::tuple{"+1"sv, Approx(-1.), true});
+  CHECK_EQ(parse_digits("-1.-1"sv), std::tuple{"-1"sv, Approx(-1.), true});
 
-  CHECK_EQ(parse_digits(".1"sv), std::tuple{""sv, doctest::Approx(0.1)});
-  CHECK_EQ(parse_digits("-.1"sv), std::tuple{""sv, doctest::Approx(-0.1)});
-  CHECK_EQ(parse_digits("+.1"sv), std::tuple{""sv, doctest::Approx(0.1)});
-  CHECK_EQ(parse_digits("++.1"sv), std::tuple{""sv, doctest::Approx(0.1)});
-  CHECK_EQ(parse_digits("--.1"sv), std::tuple{""sv, doctest::Approx(0.1)});
-  CHECK_EQ(parse_digits("-+-.1"sv), std::tuple{""sv, doctest::Approx(0.1)});
-  CHECK_EQ(parse_digits("---.1"sv), std::tuple{""sv, doctest::Approx(-0.1)});
-  CHECK_EQ(parse_digits("---.1+"sv), std::tuple{"+"sv, doctest::Approx(-0.1)});
-  CHECK_EQ(parse_digits("---.1-"sv), std::tuple{"-"sv, doctest::Approx(-0.1)});
+  CHECK_EQ(parse_digits(".1"sv), std::tuple{""sv, Approx(0.1), true});
+  CHECK_EQ(parse_digits("-.1"sv), std::tuple{""sv, Approx(-0.1), true});
+  CHECK_EQ(parse_digits("+.1"sv), std::tuple{""sv, Approx(0.1), true});
+  CHECK_EQ(parse_digits("++.1"sv), std::tuple{""sv, Approx(0.1), true});
+  CHECK_EQ(parse_digits("--.1"sv), std::tuple{""sv, Approx(0.1), true});
+  CHECK_EQ(parse_digits("-+-.1"sv), std::tuple{""sv, Approx(0.1), true});
+  CHECK_EQ(parse_digits("---.1"sv), std::tuple{""sv, Approx(-0.1), true});
+  CHECK_EQ(parse_digits("---.1+"sv), std::tuple{"+"sv, Approx(-0.1), true});
+  CHECK_EQ(parse_digits("---.1-"sv), std::tuple{"-"sv, Approx(-0.1), true});
 
-  CHECK_EQ(parse_digits("0.0"sv), std::tuple{""sv, doctest::Approx(0.0)});
-  CHECK_EQ(parse_digits("1.0"sv), std::tuple{""sv, doctest::Approx(1.0)});
-  CHECK_EQ(parse_digits("1.1"sv), std::tuple{""sv, doctest::Approx(1.1)});
-  CHECK_EQ(parse_digits("1.1.1"sv), std::tuple{".1"sv, doctest::Approx(1.1)});
-  CHECK_EQ(parse_digits("1.1.1.2"sv),
-           std::tuple{".1.2"sv, doctest::Approx(1.1)});
-  CHECK_EQ(parse_digits("..1"), std::tuple{".1", 0});
+  CHECK_EQ(parse_digits("0.0"sv), std::tuple{""sv, Approx(0.0), true});
+  CHECK_EQ(parse_digits("1.0"sv), std::tuple{""sv, Approx(1.0), true});
+  CHECK_EQ(parse_digits("1.1"sv), std::tuple{""sv, Approx(1.1), true});
+  CHECK_EQ(parse_digits("1.1.1"sv), std::tuple{".1"sv, Approx(1.1), true});
+  CHECK_EQ(parse_digits("1.1.1.2"sv), std::tuple{".1.2"sv, Approx(1.1), true});
+  CHECK_EQ(parse_digits("..1"), std::tuple{".1", Approx(0.), true});
 
-  CHECK_EQ(parse_digits("(1)"), std::tuple{"(1)", 0});
+  CHECK_EQ(parse_digits("(1)"), std::tuple{"(1)", Approx(0.), false});
 }
 
-static auto parse_expr(std::string_view str) -> Result {
-  auto dst = 0.;
-  auto kill = false;
-  while (not str.empty() and str[0] != ')') {
-    auto [rhs, val] = parse_digits(str);
-    if (rhs[0] == '(' or rhs[0] == '/' or rhs[0] == '*') {
-      // dst = rhs[0] == '/' ? dst / val : dst * val;
+static auto parse_expr(std::string_view str, double dst) -> Result {
+  for (auto opr = '+'; not str.empty() and str[0] != ')';) {
+    if (str[0] == '(' or str[0] == '*' or str[0] == '/') {
+      auto [rhs, val, did_parse] = parse_expr(str.substr(1), 1.);
     }
   }
 
-  return {str, dst};
+  return {str, dst, true};
 }
 
 TEST_CASE("parse_expr") {
-  CHECK_EQ(parse_expr("1*1"), std::tuple{""sv, doctest::Approx(0.)});
-  CHECK_EQ(parse_expr("(1*1)"), std::tuple{""sv, doctest::Approx(0.)});
+  using doctest::Approx;
+  CHECK_EQ(parse_expr("1*1", 0.), std::tuple{""sv, Approx(0.), true});
+  CHECK_EQ(parse_expr("(1*1)", 0.), std::tuple{""sv, Approx(0.), true});
+  CHECK_EQ(parse_expr("1(1*1)", 0.), std::tuple{""sv, Approx(0.), true});
+  CHECK_EQ(parse_expr("1*(1*1)", 0.), std::tuple{""sv, Approx(0.), true});
+  CHECK_EQ(parse_expr("1*((1)*(1))", 0.), std::tuple{""sv, Approx(0.), true});
 }
