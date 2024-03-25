@@ -85,27 +85,22 @@ static auto parse_expr(std::string_view str) -> Result {
   auto res = Result{};
   while (not str.empty()) {
     if (not(std::isdigit(str[0]) or str[0] == '(' or str[0] == '+' or
-            str[0] == '-')) {
+            str[0] == '-'))
       return {str, dst, false};
-    }
-    if (str[0] == '(') {
-      auto len = 0uz, b = 1uz;
-      while (len < str.length() and b) {
-        ++len;
-        b += (str[len] == '(') - 1uz * (str[len] == ')');
+    auto res = [&] -> Result {
+      if (str[0] == '(') {
+        auto len = 0uz, b = 1uz;
+        for (; len < str.length() and b;
+             ++len, b += (str[len] == '(') - 1uz * (str[len] == ')'))
+          ;
+        if (b != 0) return {str, dst, false};
+        auto res = parse_expr(str.substr(1uz, len - 1uz));
+        if (not res.is_ok or not res.str.empty()) return {str, dst, false};
+        return {str.substr(len + 1uz), res.val, res.is_ok};
       }
-      if (b != 0) {
-        return {str, dst, false};
-      }
-      res = parse_expr(str.substr(1uz, len - 1uz));
-      if (not res.is_ok or not res.str.empty()) {
-        return {str, dst, false};
-      }
-      res.str = str.substr(len + 1uz);
-    } else {
-      res = parse_digits(str);
-    }
-
+      return parse_digits(str);
+    }();
+    if (not res.is_ok) return res;
     while (not res.str.empty() and (res.str[0] == '*' or res.str[0] == '/')) {
       auto next = parse_expr(res.str.substr(1));
       if (not next.is_ok) {
@@ -120,7 +115,6 @@ static auto parse_expr(std::string_view str) -> Result {
     str = res.str;
     dst += res.val;
   }
-
   return {str, dst, true};
 }
 
