@@ -40,7 +40,7 @@ release: build
 	cmake --build build;
 
 clean-release:
-	rm -rf build-release;
+	rm -rf build;
 
 all: debug relwithdebinfo release
 	@:
