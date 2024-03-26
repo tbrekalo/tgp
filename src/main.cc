@@ -6,31 +6,29 @@
 using namespace std::literals;
 
 static auto parse_expr(char const* s, double* d) -> int {
-  auto i = 0, n_cur = 0, n_sign = 0, sign = 1;
-  auto cur = 0., next = 0.;
-  for (*d = 0.; *(s + i) && *(s + i) != ')'; sign = 1, n_cur = 0) {
-    for (n_sign = 0; *(s + i + n_sign) == '+' || *(s + i + n_sign) == '-';
-         ++n_sign)
-      sign *= *(s + i + n_sign) == '-' ? -1. : 1.;
-    if (sscanf(s + i + n_sign, "%lf%n", &cur, &n_cur); n_cur == 0)
-      n_cur = parse_expr(s + i + n_sign + 1, &cur) + 2;
-    i += n_sign + n_cur;
-    for (auto q = s, c = s + i; *c && *c != ')' && *c != '+' && *c != '-';
-         c = s + i) {
-      for (q = c; *q && (*q == '*' || *q == '/'); ++q)
-        ;
-      i += (q - c) + parse_expr(q + (*q == '('), &next) + 2 * (*q == '(');
+  auto r = 0, n_cur = 0, n_sign = 0, sign = 1;
+  auto z = s;
+  for (*d = 0.; *z && *z != ')'; sign = 1, n_cur = 0) {
+    auto cur = 0., next = 0.;
+    for (n_sign = 0; *(z + n_sign) == '+' || *(z + n_sign) == '-'; ++n_sign)
+      sign *= *(z + n_sign) == '-' ? -1. : 1.;
+    if (sscanf(z + n_sign, "%lf%n", &cur, &n_cur); n_cur == 0)
+      n_cur = parse_expr(z + n_sign + 1, &cur) + 2;
+    z += n_sign + n_cur;
+    for (auto q = s, c = z; *c && *c != ')' && *c != '+' && *c != '-'; c = z) {
+      for (q = c; *q && (*q == '*' || *q == '/'); ++q) next = 0.;
+      z += (q - c) + parse_expr(q + (*q == '('), &next) + 2 * (*q == '(');
       cur = *c != '/' ? cur * next : cur / next;
     }
     *d += sign * cur;
   }
-  return i;
+  return z - s;
 }
 
 TEST_CASE("parse_expr") {
   using doctest::Approx;
-  auto parser =
-      [x = 0.](std::string_view str) mutable -> std::tuple<double, int> {
+  auto parser = [](std::string_view str) {
+    auto x = 0.;
     auto ret = std::tuple{x, parse_expr(str.data(), &x)};
     return ret;
   };
@@ -57,4 +55,5 @@ TEST_CASE("parse_expr") {
   CHECK_EQ(parser("2(1+(1))-1/-1"), std::tuple{Approx(5.), 13});
   CHECK_EQ(parser("2((1+(1)))-1/-1"), std::tuple{Approx(5.), 15});
   CHECK_EQ(parser("2*((1+(1)))-1/-1"), std::tuple{Approx(5.), 16});
+  CHECK_EQ(parser("2*((1+(1/2)))-1/-1"), std::tuple{Approx(4.), 18});
 }
