@@ -44,10 +44,11 @@ TEST_CASE("parse_expr") {
   CHECK_EQ(parser("((1))+(1)"), std::tuple{Approx(2.), 9});
   CHECK_EQ(parser("((1))+-+(1)"), std::tuple{Approx(0.), 11});
 
-  CHECK_EQ(parser("1(1)"), std::tuple{Approx(1.), 4});
-  CHECK_EQ(parser("(1)1"), std::tuple{Approx(1.), 4});
+  CHECK_EQ(parser("2(1)"), std::tuple{Approx(2.), 4});
+  CHECK_EQ(parser("(1)2"), std::tuple{Approx(2.), 4});
   CHECK_EQ(parser("(1)(1)"), std::tuple{Approx(1.), 6});
   CHECK_EQ(parser("(1)/(1)"), std::tuple{Approx(1.), 7});
+  CHECK_EQ(parser("(1)/-(1)"), std::tuple{Approx(-1.), 8});
   CHECK_EQ(parser("(2)*(1.5)"), std::tuple{Approx(3.), 9});
   CHECK_EQ(parser("2(1+1)1/1"), std::tuple{Approx(4.), 9});
   CHECK_EQ(parser("2(1+1)1/-1"), std::tuple{Approx(-4.), 10});
@@ -57,3 +58,4 @@ TEST_CASE("parse_expr") {
   CHECK_EQ(parser("2*((1+(1)))-1/-1"), std::tuple{Approx(5.), 16});
   CHECK_EQ(parser("2*((1+(1/2)))-1/-1"), std::tuple{Approx(4.), 18});
 }
+
