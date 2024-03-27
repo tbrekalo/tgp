@@ -3,8 +3,6 @@
 
 #include "doctest/doctest.h"
 
-using namespace std::literals;
-
 static int parse_expr(char const* s, double* d, int add = 1, int mul = 1) {
   auto sign = 1, n_sign = 0, n_cur = 0;
   auto z = s;
@@ -47,13 +45,24 @@ TEST_CASE("parse_expr") {
   CHECK_EQ(parser("((1))+-+(1)"), std::tuple{Approx(0.), 11});
 
   CHECK_EQ(parser("2/2/2"), std::tuple{Approx(.5), 5});
+  CHECK_EQ(parser("2/2/2-0.5"), std::tuple{Approx(0.), 9});
+  CHECK_EQ(parser("2/(1+1)/2"), std::tuple{Approx(.5), 9});
   CHECK_EQ(parser("2*2*2"), std::tuple{Approx(8.), 5});
+  CHECK_EQ(parser("2*(1+1)*2"), std::tuple{Approx(8.), 9});
+  CHECK_EQ(parser("2*(1+2/2+1)*2"), std::tuple{Approx(12.), 13});
+  CHECK_EQ(parser("2*(1+2/2+2)*2"), std::tuple{Approx(16.), 13});
+  CHECK_EQ(parser("2*2/-2*-(--4)"), std::tuple{Approx(8.), 13});
 
   CHECK_EQ(parser("(1)/(1)"), std::tuple{Approx(1.), 7});
   CHECK_EQ(parser("(1)/-(1)"), std::tuple{Approx(-1.), 8});
   CHECK_EQ(parser("(2)*(1.5)"), std::tuple{Approx(3.), 9});
   CHECK_EQ(parser("2*((1+(1)))-1/-1"), std::tuple{Approx(5.), 16});
   CHECK_EQ(parser("2*((1+(1/2)))-1/-1"), std::tuple{Approx(4.), 18});
+  CHECK_EQ(parser("2*((1+(1/++2)))-1/-1"), std::tuple{Approx(4.), 20});
+  CHECK_EQ(parser("2*((1+(1/--2)))-1/-1"), std::tuple{Approx(4.), 20});
+  CHECK_EQ(parser("2*((1+(1/-+-2)))-1/-1"), std::tuple{Approx(4.), 21});
+  CHECK_EQ(parser("2*((1+(1/-+2)))-1/-1"), std::tuple{Approx(2.), 20});
+  CHECK_EQ(parser("2*((1+(1/-+2)))-1/-1*2"), std::tuple{Approx(3.), 22});
 
   CHECK_EQ(parser("2.*.3"), std::tuple{Approx(.6), 5});
   CHECK_EQ(parser("3./.3"), std::tuple{Approx(10.), 5});
@@ -72,4 +81,11 @@ TEST_CASE("parse_expr") {
   CHECK_EQ(parser("1/.2*(1)"), std::tuple{Approx(5.), 8});
   CHECK_EQ(parser("1/2.*(1)*2"), std::tuple{Approx(1.), 10});
   CHECK_EQ(parser("1/2.*(2)"), std::tuple{Approx(1.), 8});
+  CHECK_EQ(parser("((5+3)*4-(7+2)*6+10-2*(4+5))*3+(8-2)*5-7*(6-3)+12"),
+           std::tuple{Approx(-69.), 49});
+  CHECK_EQ(parser("((5+3)/4----(-7+2)*6+10/2*(-4+5))*3+(-8---2)/5-7*(6-3)+12"),
+           std::tuple{Approx(-80.), 57});
+
+  CHECK_EQ(parser("-(---((((--1)))))"), std::tuple{Approx(1.), 17});
+  CHECK_EQ(parser("-10./-(--2)"), std::tuple{Approx(5.), 11});
 }
