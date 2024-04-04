@@ -3,24 +3,25 @@
 
 #include "doctest/doctest.h"
 
-static int parse_expr(char const* s, double* d, int add = 1, int mul = 1) {
-  auto sign = 1, n_sign = 0, n_cur = 0;
-  auto z = s;
-  for (*d = 0.; *z && *z != ')'; sign = 1, n_cur = 0) {
-    double cur = 0, next = 0;
-    for (n_sign = 0; *(z + n_sign) == '+' || *(z + n_sign) == '-'; ++n_sign)
-      sign *= *(z + n_sign) == '-' ? -1. : 1.;
-    z += n_sign + (sscanf(z + n_sign, "%lf%n", &cur, &n_cur)
-                       ? n_cur
-                       : (parse_expr(z + n_sign + 1, &cur) + 2));
-    for (auto q = s, c = z; mul && *c && *c != ')' && *c != '+' && *c != '-';
-         c = z) {
-      for (q = c; *q && (*q == '*' || *q == '/'); ++q) next = 0.;
-      z += (q - c) + parse_expr(q, &next, 0, *c != '/');
-      cur = *c != '/' ? cur * next : cur / next;
+static auto parse(char const* s) {
+  auto sign = 1.;
+  for (; *s; ++s) {
+  }
+}
+
+static int parse_expr(char const* s, double* d, int a = 1, int m = 1) {
+  auto sign = 1., n_cur = 0., c = 0., n = 0.;
+  auto z = s, q = s, y = s;
+  for (auto n_cur = 0; *z && *z != ')'; sign = 1, n_cur = 0) {
+    for (c = n = 0.; *z == '+' || *z == '-'; ++z) sign *= *z == '-' ? -1. : 1.;
+    z += sscanf(z, "%lf%n", &c, &n_cur) ? n_cur : (parse_expr(z + 1, &c) + 2);
+    for (y = z; m && *y && *y != ')' && *y != '+' && *y != '-'; y = z) {
+      for (q = y; *q && (*q == '*' || *q == '/'); ++q) n = 0.;
+      z += (q - y) + parse_expr(q, &n, 0, *y != '/');
+      c = *y != '/' ? c * n : c / n;
     }
-    *d += sign * cur;
-    if (!add) break;
+    *d += sign * c;
+    if (!a) break;
   }
   return z - s;
 }
