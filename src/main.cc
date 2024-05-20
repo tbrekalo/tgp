@@ -3,12 +3,6 @@
 
 #include "doctest/doctest.h"
 
-static auto parse(char const* s) {
-  auto sign = 1.;
-  for (; *s; ++s) {
-  }
-}
-
 static int parse_expr(char const* s, double* d, int a = 1 << 30, int m = 1) {
   auto sign = 1., n_cur = 0., c = 0., n = 0.;
   auto z = s, q = s, y = s;
